@@ -1,0 +1,34 @@
+# Secrets & credentials
+openclaw.json
+credentials/
+identity/
+telegram/
+devices/
+
+# Databases
+**/*.sqlite
+**/*.sqlite-wal
+**/*.sqlite-shm
+
+# Runtime / temp
+tmp/
+logs/
+tui/
+delivery-queue/
+gateway-supervisor-restart-handoff.json
+update-check.json
+plugin-state/
+flows/
+media/
+browser/
+
+# macOS
+.DS_Store
+
+# npm
+npm/
+node_modules/
+
+# Git inside workspace (openclaw manages this separately)
+workspace/.git/
+workspace/.openclaw/
