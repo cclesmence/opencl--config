@@ -81,20 +81,69 @@ Telegram channel phải hiện `OK`.
 ### Test:
 Nhắn qua Telegram bot:
 ```
-/apply 022057683405563489518
+/apply 022057683405563489518 jobType=Fixed
 ```
+> Thay `jobType` thành `Hourly` khi test flow Hourly.
 
 ---
 
 ## Skill: /apply
 
-Lệnh `/apply <job_id>` tự động:
+Cú pháp gửi cho agent (qua Telegram **hoặc API**):
+
+```
+/apply <job_id_or_url> jobType=<Hourly|Fixed>
+
+COVER_LETTER:
+<cover_letter_text>
+```
+
+`jobType` là bắt buộc (không phân biệt hoa thường) để agent biết phải dùng flow Hourly hay Fixed khi apply.
+
+Lệnh tự động:
 1. Mở trang apply Upwork
 2. Đọc job description
-3. AI generate cover letter phù hợp (dưới 150 từ)
-4. Điền form: By project / 1-3 months / bid = 0
+3. Dán đúng cover letter do người dùng cung cấp (không tự viết)
+4. Điền form theo flow tương ứng `jobType` (chi tiết trong `agents/main/BOOTSTRAP.md`)
 5. Submit
 6. Báo kết quả về Telegram
+
+---
+
+## Đồng bộ BOOTSTRAP và restart Gateway
+
+Khi chỉnh `agents/main/BOOTSTRAP.md`, luôn copy sang **cả hai** vị trí trên máy đang chạy gateway:
+
+```bash
+cp agents/main/BOOTSTRAP.md ~/.openclaw/agents/main/BOOTSTRAP.md
+cp agents/main/BOOTSTRAP.md ~/.openclaw/workspace/BOOTSTRAP.md
+```
+
+Sau đó restart Gateway để agent nạp skill mới:
+
+```bash
+launchctl unload ~/Library/LaunchAgents/ai.openclaw.gateway.plist
+launchctl load  ~/Library/LaunchAgents/ai.openclaw.gateway.plist
+```
+
+Xác minh nhanh:
+
+```bash
+diff agents/main/BOOTSTRAP.md ~/.openclaw/agents/main/BOOTSTRAP.md
+diff agents/main/BOOTSTRAP.md ~/.openclaw/workspace/BOOTSTRAP.md
+```
+
+### “Prime” session auto-apply
+
+Sau khi restart, gửi một lệnh mở đầu để agent hiểu vai trò trước khi nhận `/apply` (ví dụ session key `agent:main:auto-apply`):
+
+```bash
+openclaw agent --agent main --session-key agent:main:auto-apply \
+  --message "Bạn đang chạy local để xử lý /apply Upwork như trong BOOTSTRAP. Khi nhận /apply <job>, hãy làm theo hướng dẫn." \
+  --json
+```
+
+Từ lần tiếp theo chỉ cần `/apply <job_id>` (qua Telegram hoặc API tùy bạn).
 
 ---
 
@@ -126,6 +175,21 @@ nssm restart OpenClawGateway
 openclaw status --deep
 openclaw logs --follow
 ```
+
+### Muốn xem log chi tiết
+
+- `openclaw logs --follow` → tương đương `tail -f` (Gateway định dạng sẵn)
+- Hoặc trực tiếp: `tail -f /tmp/openclaw/openclaw-$(date +%Y-%m-%d).log`
+
+### Pairing / scope upgrade bị chặn
+
+Khi thấy lỗi `pairing required` hoặc `scope upgrade pending approval`, mở Control UI hoặc chạy:
+
+```bash
+openclaw pairing approve --device <device_id>
+```
+
+Device ID xuất hiện trong log Gateway (`security audit: device access upgrade requested`). Approve một lần là thiết bị đó có thể gọi gateway về sau.
 
 ### Port 9222 conflict:
 
